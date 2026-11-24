@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import {
@@ -56,6 +56,8 @@ export interface BulkExpirationResult {
 
 @Injectable()
 export class SorobanService {
+  private readonly logger = new Logger(SorobanService.name);
+
   // Network constants
   private readonly LEDGER_CLOSE_TIME_SECONDS = 5; // Average Stellar ledger close time
   private readonly SECONDS_PER_DAY = 86400;
