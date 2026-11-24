@@ -571,7 +571,7 @@ describe('PlaygroundTool', () => {
 
     render(<PlaygroundTool />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /Pending/ }).catch(() => screen.findByRole('button', { name: /Payments/ })));
+    await userEvent.click(await screen.findByRole('button', { name: /Payments/ }));
     await userEvent.click(screen.getByRole('button', { name: /GET\s+\/payments/ }));
     await userEvent.click(screen.getByRole('button', { name: /Send/ }));
 
