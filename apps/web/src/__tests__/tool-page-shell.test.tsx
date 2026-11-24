@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { ToolPageShell } from '@/components/tools/tool-page-shell';
 
-// Mock Next.js Link component
+// Mock Next.js Link component. The function is named so `react/display-name`
+// stays satisfied — an anonymous arrow component is a lint error here.
 jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => {
+  return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
     return <a href={href}>{children}</a>;
   };
 });
@@ -32,7 +33,9 @@ describe('ToolPageShell', () => {
   it('renders share tool link button', () => {
     render(<ToolPageShell {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: /Copy a link to this tool state/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Copy a link to this tool state/i }),
+    ).toBeInTheDocument();
   });
 
   it('renders docs link when docsHref is provided', () => {
@@ -72,7 +75,7 @@ describe('ToolPageShell', () => {
     const { container } = render(<ToolPageShell {...defaultProps} docsHref="/docs/test" />);
 
     const docsLink = screen.getByRole('link', { name: /Usage docs/i });
-    
+
     // Check that an SVG icon is present (lucide icons render as SVG)
     const icon = docsLink.querySelector('svg');
     expect(icon).toBeInTheDocument();

@@ -8,7 +8,7 @@ describe('ShareToolLink', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.clearAllTimers();
-    
+
     // Mock navigator.clipboard
     writeTextMock = jest.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
@@ -35,6 +35,21 @@ describe('ShareToolLink', () => {
     jest.useRealTimers();
   });
 
+  /**
+   * `userEvent.setup()` installs its own clipboard stub, which hides the mock
+   * installed in `beforeEach`. Restore ours so the assertion observes the
+   * component's `writeText` call rather than the harness's.
+   */
+  function setupUser() {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    });
+    return user;
+  }
+
   it('renders copy link button with initial state', () => {
     render(<ShareToolLink />);
 
@@ -44,7 +59,7 @@ describe('ShareToolLink', () => {
   });
 
   it('copies the current URL to clipboard when clicked', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ShareToolLink />);
 
     const button = screen.getByRole('button');
@@ -56,7 +71,7 @@ describe('ShareToolLink', () => {
   });
 
   it('shows "Copied" state after successful copy', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ShareToolLink />);
 
     const button = screen.getByRole('button');
@@ -96,7 +111,7 @@ describe('ShareToolLink', () => {
 
   it('handles clipboard write failure gracefully', async () => {
     writeTextMock.mockRejectedValueOnce(new Error('Clipboard error'));
-    const user = userEvent.setup();
+    const user = setupUser();
 
     render(<ShareToolLink />);
 
@@ -104,9 +119,12 @@ describe('ShareToolLink', () => {
     await user.click(button);
 
     // Should not crash and should stay in initial state
-    await waitFor(() => {
-      expect(screen.getByText('Copy link')).toBeInTheDocument();
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Copy link')).toBeInTheDocument();
+      },
+      { timeout: 2000 },
+    );
 
     expect(screen.queryByText('Copied')).not.toBeInTheDocument();
   });
@@ -122,7 +140,7 @@ describe('ShareToolLink', () => {
       configurable: true,
     });
 
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ShareToolLink />);
 
     const button = screen.getByRole('button');
@@ -144,7 +162,7 @@ describe('ShareToolLink', () => {
       configurable: true,
     });
 
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ShareToolLink />);
 
     const button = screen.getByRole('button');
@@ -154,7 +172,7 @@ describe('ShareToolLink', () => {
   });
 
   it('updates aria-label based on copied state', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ShareToolLink />);
 
     const button = screen.getByRole('button', { name: /Copy a link to this tool state/i });
@@ -168,7 +186,7 @@ describe('ShareToolLink', () => {
   });
 
   it('renders Check icon when copied', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     const { container } = render(<ShareToolLink />);
 
     const button = screen.getByRole('button');
