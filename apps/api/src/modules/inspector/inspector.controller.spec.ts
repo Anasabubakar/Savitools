@@ -1,6 +1,9 @@
 import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
+import { HorizonReplay } from './entities/horizon-replay.entity';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Keypair } from '@stellar/stellar-sdk';
 import { VALIDATION_PIPE_OPTIONS } from '../../config/validation-pipe.config';
@@ -70,7 +73,16 @@ describe('InspectorController', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [InspectorController],
-      providers: [InspectorService, { provide: ConfigService, useValue: new ConfigService() }],
+      providers: [
+        InspectorService,
+        { provide: ConfigService, useValue: new ConfigService() },
+        // The replay endpoints own this repository; the routes under test never
+        // reach it, but Nest still has to resolve the dependency.
+        { provide: getRepositoryToken(HorizonReplay), useValue: {} },
+        // JwtAuthGuard is applied to the replay routes; Nest resolves it for the
+        // whole controller, even when the test never hits those routes.
+        { provide: JwtService, useValue: { verify: jest.fn(), verifyAsync: jest.fn() } },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
