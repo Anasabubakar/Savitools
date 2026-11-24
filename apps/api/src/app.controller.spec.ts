@@ -5,7 +5,6 @@ import { RedisProvider } from './common/redis.provider';
 
 describe('AppController', () => {
   let appController: AppController;
-  let appService: AppService;
   let redisProvider: RedisProvider;
 
   beforeEach(async () => {
@@ -25,7 +24,6 @@ describe('AppController', () => {
     }).compile();
 
     appController = app.get<AppController>(AppController);
-    appService = app.get<AppService>(AppService);
     redisProvider = app.get<RedisProvider>(RedisProvider);
   });
 
@@ -43,7 +41,7 @@ describe('AppController', () => {
       (redisProvider.isReady as jest.Mock).mockReturnValue(true);
 
       const result = appController.readiness();
-      
+
       expect(result.status).toBe('ready');
       expect(result.service).toBe('savitools-api');
       expect(result.checks.redis).toBe('connected');
@@ -54,7 +52,7 @@ describe('AppController', () => {
       (redisProvider.isReady as jest.Mock).mockReturnValue(false);
 
       const result = appController.readiness();
-      
+
       expect(result.status).toBe('not_ready');
       expect(result.service).toBe('savitools-api');
       expect(result.checks.redis).toBe('disconnected');
@@ -67,7 +65,7 @@ describe('AppController', () => {
       const controllerWithoutRedis = new AppController(serviceWithoutRedis);
 
       const result = controllerWithoutRedis.readiness();
-      
+
       expect(result.status).toBe('not_ready');
       expect(result.checks.redis).toBe('disconnected');
     });
