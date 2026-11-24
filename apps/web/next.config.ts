@@ -27,8 +27,6 @@ const connectSrc = [
   'https://horizon.stellar.org',
   'https://friendbot.stellar.org',
   ...playgroundConnectOrigins(),
-  // Legacy CrowdPay alias that older deployments still point at.
-  'https://api.crowdpay.io',
   'wss://*.stellar.org',
 ].join(' ');
 
