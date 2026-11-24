@@ -51,7 +51,7 @@ export function migrateNetworkProfilePayload(input: {
   }
   if (version < MIN_SUPPORTED_NETWORK_PROFILE_VERSION || version > NETWORK_PROFILE_SCHEMA_VERSION) {
     throw new BadRequestException(
-      `Network profile schema version ${version} is not supported. This build supports versions ${MIN_SUPPORTED_NETWORK_PROFILE_VERSION}–${NETWORK_PROFILE_SCHEMA_VERSION}.`,
+      `Unsupported schema version ${version}. This build supports version ${MIN_SUPPORTED_NETWORK_PROFILE_VERSION}–${NETWORK_PROFILE_SCHEMA_VERSION}.`,
     );
   }
 
