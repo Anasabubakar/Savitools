@@ -13,10 +13,17 @@ jest.mock('@/lib/api', () => ({
 
 it('selects an endpoint from the provider specification', () => {
   const onSelect = jest.fn();
-  render(<EndpointBrowser spec={{ paths: { '/accounts': { get: { summary: 'List accounts' } } } }}
-    selectedEndpoint={null} onSelect={onSelect} />);
+  render(
+    <EndpointBrowser
+      spec={{ paths: { '/accounts': { get: { summary: 'List accounts' } } } }}
+      selectedEndpoint={null}
+      onSelect={onSelect}
+    />,
+  );
   fireEvent.click(screen.getByRole('button', { name: /get.*\/accounts/i }));
-  expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ method: 'GET', path: '/accounts' }));
+  expect(onSelect).toHaveBeenCalledWith(
+    expect.objectContaining({ method: 'GET', path: '/accounts' }),
+  );
 });
 
 it('copies encoded query parameters and uses a placeholder for authorization', async () => {
@@ -24,8 +31,16 @@ it('copies encoded query parameters and uses a placeholder for authorization', a
   const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
   try {
-    render(<CopyCurlButton method="GET" path="/accounts" provider="fluxa" useAuth
-      queryParams={{ q: 'one two' }} headers={{ authorization: 'private-test-value' }} />);
+    render(
+      <CopyCurlButton
+        method="GET"
+        path="/accounts"
+        provider="fluxa"
+        useAuth
+        queryParams={{ q: 'one two' }}
+        headers={{ authorization: 'private-test-value' }}
+      />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Copy as cURL' }));
     expect(await screen.findByRole('button', { name: 'Copied!' })).toBeInTheDocument();
     const command = writeText.mock.calls[0][0];
@@ -39,14 +54,26 @@ it('copies encoded query parameters and uses a placeholder for authorization', a
 });
 
 it('creates and revokes a provider key', async () => {
-  const key = { id: 'key-1', label: 'Sandbox', provider: 'fluxa' as const, maskedKey: '•••123', createdAt: '' };
-  jest.mocked(listPlaygroundApiKeys).mockResolvedValueOnce([]).mockResolvedValueOnce([key]).mockResolvedValueOnce([]);
+  const key = {
+    id: 'key-1',
+    label: 'Sandbox',
+    provider: 'fluxa' as const,
+    maskedKey: '•••123',
+    createdAt: '',
+  };
+  jest
+    .mocked(listPlaygroundApiKeys)
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([key])
+    .mockResolvedValueOnce([]);
   render(<KeyManager provider="fluxa" />);
   fireEvent.click(screen.getByRole('button', { name: 'Add API key' }));
   await screen.findByText(/no keys stored/i);
   fireEvent.click(screen.getByRole('button', { name: 'Add new key' }));
   fireEvent.change(screen.getByPlaceholderText(/key label/i), { target: { value: ' Sandbox ' } });
-  fireEvent.change(screen.getByPlaceholderText(/paste your fluxa/i), { target: { value: ' example-key ' } });
+  fireEvent.change(screen.getByPlaceholderText(/paste your fluxa/i), {
+    target: { value: ' example-key ' },
+  });
   fireEvent.click(screen.getByRole('button', { name: 'Save Key' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Revoke Sandbox' }));
   expect(savePlaygroundApiKey).toHaveBeenCalledWith('fluxa', 'Sandbox', 'example-key');
@@ -55,7 +82,17 @@ it('creates and revokes a provider key', async () => {
 });
 
 it('shows the response body, headers, status and latency', () => {
-  render(<ResponsePanel error={null} response={{ status: 200, latencyMs: 42, body: { ok: true }, headers: { 'x-request-id': 'abc' } }} />);
+  render(
+    <ResponsePanel
+      error={null}
+      response={{
+        status: 200,
+        latencyMs: 42,
+        body: { ok: true },
+        headers: { 'x-request-id': 'abc' },
+      }}
+    />,
+  );
   expect(screen.getByText('200')).toBeInTheDocument();
   expect(screen.getByText('42ms')).toBeInTheDocument();
   expect(screen.getByText(/"ok": true/)).toBeInTheDocument();

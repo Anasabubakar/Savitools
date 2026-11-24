@@ -54,23 +54,28 @@ async function loadHeaders(env = 'test'): Promise<Record<string, string>> {
 }
 
 describe('Security Headers', () => {
-  it.each(['development', 'production'])('preserves required connect-src origins in %s', async (env) => {
-    const headers = await loadHeaders(env);
-    const csp = headers['content-security-policy'];
-    const connectSrc = csp.split('; ').find((directive) => directive.startsWith('connect-src '));
-    const { playgroundConnectOrigins } = await import('../lib/playground-origins');
+  it.each(['development', 'production'])(
+    'preserves required connect-src origins in %s',
+    async (env) => {
+      const headers = await loadHeaders(env);
+      const csp = headers['content-security-policy'];
+      const connectSrc = csp.split('; ').find((directive) => directive.startsWith('connect-src '));
+      const { playgroundConnectOrigins } = await import('../lib/playground-origins');
 
-    expect(connectSrc?.split(' ').slice(1)).toEqual(expect.arrayContaining([
-      "'self'",
-      'https://horizon-testnet.stellar.org',
-      'https://horizon.stellar.org',
-      'https://friendbot.stellar.org',
-      'wss://*.stellar.org',
-      ...playgroundConnectOrigins(),
-    ]));
-    expect(headers['permissions-policy']).toContain('camera=(self)');
-    expect(headers['x-content-type-options']).toBe('nosniff');
-  });
+      expect(connectSrc?.split(' ').slice(1)).toEqual(
+        expect.arrayContaining([
+          "'self'",
+          'https://horizon-testnet.stellar.org',
+          'https://horizon.stellar.org',
+          'https://friendbot.stellar.org',
+          'wss://*.stellar.org',
+          ...playgroundConnectOrigins(),
+        ]),
+      );
+      expect(headers['permissions-policy']).toContain('camera=(self)');
+      expect(headers['x-content-type-options']).toBe('nosniff');
+    },
+  );
 
   it.each([undefined, 'https://api.crowdpay.io/v1'])(
     'allows the legacy CrowdPay origin only when configured (%s)',
@@ -87,8 +92,9 @@ describe('Security Headers', () => {
             .split('; ')
             .find((directive) => directive.startsWith('connect-src '));
           expect(connectSrc).toBeDefined();
-          expect(connectSrc?.split(' ').includes('https://api.crowdpay.io'))
-            .toBe(configuredUrl !== undefined);
+          expect(connectSrc?.split(' ').includes('https://api.crowdpay.io')).toBe(
+            configuredUrl !== undefined,
+          );
         }
       } finally {
         if (previous === undefined) delete process.env[key];

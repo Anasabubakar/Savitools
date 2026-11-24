@@ -2,15 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import {
-  KeyRound,
-  Plus,
-  Trash2,
-  X,
-  Eye,
-  EyeOff,
-  Loader2,
-} from 'lucide-react';
+import { KeyRound, Plus, Trash2, X, Eye, EyeOff, Loader2 } from 'lucide-react';
 import {
   listPlaygroundApiKeys,
   savePlaygroundApiKey,

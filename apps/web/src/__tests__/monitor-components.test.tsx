@@ -42,19 +42,36 @@ describe('Monitor watch form', () => {
 
 it('renders a live payment alongside watch history', async () => {
   const watch: Watch = {
-    id: 'watch-1', publicKey: 'GEXAMPLE', label: 'Treasury', type: 'account',
-    network: 'testnet', eventTypes: ['payment'], alertRules: [], cursorLedger: null,
-    streamMode: 'sse', status: 'streaming', lastEventAt: null, lastError: null,
+    id: 'watch-1',
+    publicKey: 'GEXAMPLE',
+    label: 'Treasury',
+    type: 'account',
+    network: 'testnet',
+    eventTypes: ['payment'],
+    alertRules: [],
+    cursorLedger: null,
+    streamMode: 'sse',
+    status: 'streaming',
+    lastEventAt: null,
+    lastError: null,
   };
   const occurredAt = '2026-01-01T01:00:00Z';
   const event: WatchEvent = {
-    id: 'event-1', watchId: watch.id, pagingToken: '1', source: 'payment',
-    eventType: 'payment', payload: { amount: '12.5', asset_type: 'native' },
-    occurredAt, createdAt: occurredAt,
+    id: 'event-1',
+    watchId: watch.id,
+    pagingToken: '1',
+    source: 'payment',
+    eventType: 'payment',
+    payload: { amount: '12.5', asset_type: 'native' },
+    occurredAt,
+    createdAt: occurredAt,
   };
   jest.mocked(apiFetch).mockResolvedValueOnce({ items: [event], total: 1 });
   const scrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo');
-  Object.defineProperty(HTMLElement.prototype, 'scrollTo', { configurable: true, value: jest.fn() });
+  Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+    configurable: true,
+    value: jest.fn(),
+  });
   try {
     render(<LiveFeed watch={watch} liveEvents={[event]} />);
     expect(await screen.findByText('12.5 XLM')).toBeInTheDocument();
