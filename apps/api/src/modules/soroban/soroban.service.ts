@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import {
@@ -56,8 +56,6 @@ export interface BulkExpirationResult {
 
 @Injectable()
 export class SorobanService {
-  private readonly logger = new Logger(SorobanService.name);
-
   // Network constants
   private readonly LEDGER_CLOSE_TIME_SECONDS = 5; // Average Stellar ledger close time
   private readonly SECONDS_PER_DAY = 86400;
@@ -117,7 +115,7 @@ export class SorobanService {
       status,
       storageType,
       daysRemaining,
-      ttlRemaining
+      ttlRemaining,
     );
 
     return {
@@ -170,7 +168,7 @@ export class SorobanService {
     const recommendation = this.generateExtensionRecommendation(
       extendedDays,
       totalCostStroops,
-      storageType
+      storageType,
     );
 
     return {
@@ -194,16 +192,11 @@ export class SorobanService {
    * Bulk estimate expiration for multiple contracts
    */
   async estimateBulkExpiration(dto: BulkEstimateDto): Promise<BulkExpirationResult[]> {
-    const { contractAddresses, network } = dto;
-    const server = this.getHorizonServer(network);
+    const { contractAddresses } = dto;
 
     const results = await Promise.all(
       contractAddresses.map(async (address) => {
         try {
-          // Get current ledger
-          const ledgerResponse = await server.ledgers().order('desc').limit(1).call();
-          const currentLedger = ledgerResponse.records[0]?.sequence || 0;
-
           // Fetch contract data (this is simplified - in production you'd use RPC)
           // For now, return mock data structure
           const result: BulkExpirationResult = {
@@ -228,7 +221,7 @@ export class SorobanService {
             error: error instanceof Error ? error.message : 'Unknown error',
           };
         }
-      })
+      }),
     );
 
     return results;
@@ -237,11 +230,7 @@ export class SorobanService {
   /**
    * Calculate rent cost for storage
    */
-  private calculateRentCost(
-    sizeBytes: number,
-    ledgers: number,
-    storageType: StorageType
-  ): number {
+  private calculateRentCost(sizeBytes: number, ledgers: number, storageType: StorageType): number {
     // Cost multiplier based on storage type
     const multiplier = storageType === StorageType.TEMPORARY ? 0.5 : 1.0;
 
@@ -257,7 +246,7 @@ export class SorobanService {
     status: string,
     storageType: StorageType,
     daysRemaining: number,
-    ttlRemaining: number
+    ttlRemaining: number,
   ): string {
     if (status === 'expired') {
       if (storageType === StorageType.TEMPORARY) {
@@ -285,7 +274,7 @@ export class SorobanService {
   private generateExtensionRecommendation(
     extendedDays: number,
     costStroops: number,
-    storageType: StorageType
+    storageType: StorageType,
   ): string {
     const costXlm = (costStroops / 10_000_000).toFixed(7);
 
