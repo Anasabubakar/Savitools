@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
-import { playgroundConnectOrigins } from './src/lib/playground-origins';
+import {
+  legacyCrowdpayConnectOrigins,
+  playgroundConnectOrigins,
+} from './src/lib/playground-origins';
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -11,8 +14,7 @@ const isProd = process.env.NODE_ENV === 'production';
  * NEXT_PUBLIC_API_URL is set by the deployment environment.  The trailing
  * slash is stripped so concatenation stays predictable.
  */
-const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001')
-  .replace(/\/$/, '');
+const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').replace(/\/$/, '');
 const cspReportEndpoint = `${apiBase}/api/v1/csp-report`;
 
 /**
@@ -27,8 +29,10 @@ const connectSrc = [
   'https://horizon.stellar.org',
   'https://friendbot.stellar.org',
   ...playgroundConnectOrigins(),
-  // Legacy CrowdPay alias that older deployments still point at.
-  'https://api.crowdpay.io',
+  // Legacy CrowdPay alias, opt-in via NEXT_PUBLIC_CROWDPAY_LEGACY_API_URL so a
+  // production build does not allow-list a host nothing calls
+  // (Savitura/Savitools#688).
+  ...legacyCrowdpayConnectOrigins(),
   'wss://*.stellar.org',
 ].join(' ');
 
