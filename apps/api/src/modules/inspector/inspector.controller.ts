@@ -1,9 +1,30 @@
-import { Body, Controller, Delete, Get, Header, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiCookieAuth } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+  ApiCookieAuth,
+} from '@nestjs/swagger';
 import type { FastifyReply } from 'fastify';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DecodeXdrDto } from './dto/decode-xdr.dto';
+import { ValidateStrKeysDto } from './dto/validate-strkeys.dto';
 import { ReplayHorizonRequestDto, GetReplayHistoryDto } from './dto/replay-horizon-request.dto';
 import { InspectorService } from './inspector.service';
 
@@ -104,8 +125,29 @@ export class InspectorController {
     description: 'Decoded transaction, result, or Soroban authorization entry',
   })
   @ApiResponse({ status: 400, description: 'Invalid XDR or network' })
-  decodeXdr(@Body() dto: DecodeXDrDto) {
+  decodeXdr(@Body() dto: DecodeXdrDto) {
     return this.inspectorService.decodeXdr(dto.xdr, dto.network ?? 'testnet');
+  }
+
+  @Post('strkey/validate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Validate a batch of Stellar StrKeys offline' })
+  @ApiResponse({ status: 200, description: 'Per-row validation results; secret seeds are masked' })
+  @ApiResponse({ status: 400, description: 'Invalid batch payload' })
+  validateStrKeys(@Body() dto: ValidateStrKeysDto) {
+    return this.inspectorService.validateStrKeys(dto.inputs);
+  }
+
+  @Post('strkey/validate/export')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Export a StrKey validation batch as CSV (UTF-8 BOM for Excel)' })
+  @ApiResponse({ status: 200, description: 'CSV attachment' })
+  @ApiResponse({ status: 400, description: 'Invalid batch payload' })
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="strkey-validation.csv"')
+  @Header('Cache-Control', 'no-store')
+  exportStrKeyValidations(@Body() dto: ValidateStrKeysDto) {
+    return this.inspectorService.exportStrKeyValidationCsv(dto.inputs);
   }
 
   @Post('replay')
@@ -146,27 +188,25 @@ export class InspectorController {
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Get replay history for the current user' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max 100 (default 50)' })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset for pagination (default 0)' })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Offset for pagination (default 0)',
+  })
   @ApiQuery({ name: 'network', required: false, enum: ['testnet', 'mainnet'] })
   @ApiQuery({ name: 'transactionHash', required: false, description: 'Filter by transaction hash' })
   @ApiQuery({ name: 'requestId', required: false, description: 'Filter by request ID' })
   @ApiQuery({ name: 'workspaceId', required: false, description: 'Filter by workspace ID' })
-  async getReplayHistory(
-    @CurrentUser() user: { id: string },
-    @Query() query: GetReplayHistoryDto,
-  ) {
+  async getReplayHistory(@CurrentUser() user: { id: string }, @Query() query: GetReplayHistoryDto) {
     const workspaceId = query.workspaceId || user.id;
-    const { replays, total } = await this.inspectorService.getReplayHistory(
-      user.id,
-      workspaceId,
-      {
-        limit: query.limit,
-        offset: query.offset,
-        network: query.network,
-        transactionHash: query.transactionHash,
-        requestId: query.requestId,
-      },
-    );
+    const { replays, total } = await this.inspectorService.getReplayHistory(user.id, workspaceId, {
+      limit: query.limit,
+      offset: query.offset,
+      network: query.network,
+      transactionHash: query.transactionHash,
+      requestId: query.requestId,
+    });
 
     return {
       replays: replays.map((r) => ({
