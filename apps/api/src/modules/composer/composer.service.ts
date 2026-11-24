@@ -1216,7 +1216,9 @@ export class ComposerService {
       network: dto.network,
     });
 
-    if (!dto.includeDiff) {
+    // The endpoint is "simulate with diff": a caller that omits the flag still
+    // expects the diff, so only an explicit `false` suppresses it.
+    if (dto.includeDiff === false) {
       return {
         ...baseSimulation,
         effects: [],
@@ -1379,13 +1381,24 @@ export class ComposerService {
         case 'payment': {
           const sourceDiff = getOrCreateDiff(source);
           const destDiff = getOrCreateDiff(op.destination);
+          const assetKey = op.asset.isNative()
+            ? 'native:XLM'
+            : `${op.asset.code}:${op.asset.issuer}`;
 
-          sourceDiff.balanceChanges.push({
-            asset: op.asset.isNative() ? 'native:XLM' : `${op.asset.code}:${op.asset.issuer}`,
-            before: null,
-            after: 'TBD',
-            change: `-${op.amount}`,
-          });
+          // Every payment from one source drains the same balance, so repeated
+          // payments are folded into a single net debit instead of stacking up
+          // one entry per operation. Destination payments stay itemised.
+          const existingDebit = sourceDiff.balanceChanges.find((c) => c.asset === assetKey);
+          if (existingDebit) {
+            existingDebit.change = String(Number(existingDebit.change) - Number(op.amount));
+          } else {
+            sourceDiff.balanceChanges.push({
+              asset: assetKey,
+              before: null,
+              after: 'TBD',
+              change: `-${op.amount}`,
+            });
+          }
 
           destDiff.balanceChanges.push({
             asset: op.asset.isNative() ? 'native:XLM' : `${op.asset.code}:${op.asset.issuer}`,
