@@ -135,6 +135,7 @@ export function KeyManager({ provider, className }: KeyManagerProps) {
                   <button
                     type="button"
                     onClick={() => void handleDelete(key.id)}
+                    aria-label={`Revoke ${key.label}`}
                     className="text-muted-foreground hover:text-red-400 shrink-0"
                   >
                     <Trash2 className="h-3 w-3" />
