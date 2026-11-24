@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  StellarTestnetService,
-  type Balance,
-} from '../stellar/stellar-testnet.service';
+import { StellarTestnetService, type Balance } from '../stellar/stellar-testnet.service';
 import { PaymentDto } from './dto/payment.dto';
 import { resolveStellarEndpoints } from '../stellar/stellar-endpoints';
 
@@ -44,6 +41,16 @@ export interface SandboxTopUpResponse {
   message: string;
 }
 
+/** Shape returned by `POST /sandbox/reset`, mirrored in the web client. */
+export interface SandboxResetResponse {
+  publicKey: string;
+  reset: boolean;
+  network: string;
+  startingBalance: string;
+  txHash: string | null;
+  message: string;
+}
+
 /**
  * Sandbox page backend.
  *
@@ -54,9 +61,7 @@ export interface SandboxTopUpResponse {
  */
 @Injectable()
 export class SandboxService {
-  constructor(
-    private readonly stellar: StellarTestnetService = new StellarTestnetService(),
-  ) {}
+  constructor(private readonly stellar: StellarTestnetService = new StellarTestnetService()) {}
 
   /** Horizon client for the selected network. */
   private getServer(network: string = 'testnet', overrides?: any) {
@@ -73,7 +78,11 @@ export class SandboxService {
     overrides?: any,
   ): Promise<SandboxFundResponse> {
     const endpoints = resolveStellarEndpoints(network, overrides);
-    const existing = await this.stellar.loadAccountIfPresent(publicKey, endpoints.network, overrides);
+    const existing = await this.stellar.loadAccountIfPresent(
+      publicKey,
+      endpoints.network,
+      overrides,
+    );
     if (existing) {
       return this.fundedResult(
         publicKey,
@@ -83,14 +92,22 @@ export class SandboxService {
       );
     }
 
-    const reply = await this.stellar.requestFriendbotFunding(publicKey, endpoints.network, overrides);
+    const reply = await this.stellar.requestFriendbotFunding(
+      publicKey,
+      endpoints.network,
+      overrides,
+    );
 
     if (!reply.ok) {
       // Friendbot refuses an address it has already funded. The account exists
       // by the time we see that, so report success instead of failing a
       // request whose goal is already met.
       if (this.stellar.isAlreadyFundedReply(reply)) {
-        const account = await this.stellar.loadAccountIfPresent(publicKey, endpoints.network, overrides);
+        const account = await this.stellar.loadAccountIfPresent(
+          publicKey,
+          endpoints.network,
+          overrides,
+        );
         if (account) {
           return this.fundedResult(
             publicKey,
@@ -117,7 +134,11 @@ export class SandboxService {
     // Friendbot funds eligible accounts; it does not reset existing account state.
     let txHash: string | null = null;
     try {
-      const reply = await this.stellar.requestFriendbotFunding(publicKey, endpoints.network, overrides);
+      const reply = await this.stellar.requestFriendbotFunding(
+        publicKey,
+        endpoints.network,
+        overrides,
+      );
       if (reply.ok) {
         txHash = reply.hash;
       }
@@ -125,7 +146,11 @@ export class SandboxService {
       // If friendbot fails because already funded, reload account
     }
 
-    const account = await this.stellar.loadAccountIfPresent(publicKey, endpoints.network, overrides);
+    const account = await this.stellar.loadAccountIfPresent(
+      publicKey,
+      endpoints.network,
+      overrides,
+    );
     const balance = account ? this.stellar.startingBalanceOf(account) : '10,000 XLM';
 
     return {
@@ -134,9 +159,37 @@ export class SandboxService {
       network: endpoints.network,
       startingBalance: balance,
       txHash,
-      message: txHash !== null
-        ? `Account ${publicKey} on ${endpoints.network} has been topped up.`
-        : `Account ${publicKey} on ${endpoints.network} was not topped up; Friendbot may not fund an already-funded account.`,
+      message:
+        txHash !== null
+          ? `Account ${publicKey} on ${endpoints.network} has been topped up.`
+          : `Account ${publicKey} on ${endpoints.network} was not topped up; Friendbot may not fund an already-funded account.`,
+    };
+  }
+
+  /**
+   * Reset a sandbox account to a clean starting balance.
+   *
+   * A Stellar account cannot be deleted on testnet, so a reset tops the account
+   * back up through Friendbot and reports the resulting snapshot. `reset` stays
+   * false when Friendbot declined (an already-funded account) so the UI can tell
+   * a real reset from a no-op instead of showing a false success.
+   */
+  async resetAccount(
+    publicKey: string,
+    network: string = 'testnet',
+    overrides?: any,
+  ): Promise<SandboxResetResponse> {
+    const topUp = await this.topUpAccount(publicKey, network, overrides);
+
+    return {
+      publicKey: topUp.publicKey,
+      reset: topUp.toppedUp,
+      network: topUp.network,
+      startingBalance: topUp.startingBalance,
+      txHash: topUp.txHash,
+      message: topUp.toppedUp
+        ? `Account ${publicKey} on ${topUp.network} was reset to the Friendbot starting balance.`
+        : `Account ${publicKey} on ${topUp.network} could not be reset; Friendbot does not fund an already-funded account.`,
     };
   }
 
@@ -172,13 +225,16 @@ export class SandboxService {
 
   async sendPayment(dto: PaymentDto & { network?: string }) {
     const network = dto.network || 'testnet';
-    const result = await this.stellar.submitPayment({
-      sourceSecret: dto.fromSecret,
-      destination: dto.toPublicKey,
-      asset: dto.asset,
-      amount: dto.amount,
-      memo: dto.memo,
-    }, network);
+    const result = await this.stellar.submitPayment(
+      {
+        sourceSecret: dto.fromSecret,
+        destination: dto.toPublicKey,
+        asset: dto.asset,
+        amount: dto.amount,
+        memo: dto.memo,
+      },
+      network,
+    );
 
     // Decoded after the submission so the validation order (and therefore the
     // error a caller sees for a bad destination) stays inside submitPayment.
