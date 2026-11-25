@@ -16,16 +16,17 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
-  ApiResponse,
   ApiTags,
   ApiCookieAuth,
+  ApiResponse,
 } from '@nestjs/swagger';
 import type { FastifyReply } from 'fastify';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DecodeXdrDto } from './dto/decode-xdr.dto';
-import { ValidateStrKeysDto } from './dto/validate-strkeys.dto';
+import { InspectAuthEntryDto } from './dto/inspect-auth-entry.dto';
 import { ReplayHorizonRequestDto, GetReplayHistoryDto } from './dto/replay-horizon-request.dto';
+import { ValidateStrKeysDto } from './dto/validate-strkeys.dto';
 import { InspectorService } from './inspector.service';
 
 @ApiTags('inspector')
@@ -131,23 +132,53 @@ export class InspectorController {
 
   @Post('strkey/validate')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Validate a batch of Stellar StrKeys offline' })
-  @ApiResponse({ status: 200, description: 'Per-row validation results; secret seeds are masked' })
-  @ApiResponse({ status: 400, description: 'Invalid batch payload' })
+  @ApiOperation({
+    summary: 'Validate a batch of StrKeys offline (per-row type, validity, and error reason)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Summary counts plus one result per input; secret seeds are masked',
+  })
+  @ApiResponse({ status: 400, description: 'Empty, oversized, or non-string inputs array' })
   validateStrKeys(@Body() dto: ValidateStrKeysDto) {
     return this.inspectorService.validateStrKeys(dto.inputs);
   }
 
   @Post('strkey/validate/export')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Export a StrKey validation batch as CSV (UTF-8 BOM for Excel)' })
-  @ApiResponse({ status: 200, description: 'CSV attachment' })
-  @ApiResponse({ status: 400, description: 'Invalid batch payload' })
+  @ApiOperation({
+    summary: 'Validate StrKeys and download the per-row results as CSV (UTF-8 BOM for Excel)',
+  })
+  @ApiResponse({ status: 200, description: 'text/csv attachment, one row per input' })
+  @ApiResponse({ status: 400, description: 'Empty, oversized, or non-string inputs array' })
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="strkey-validation.csv"')
   @Header('Cache-Control', 'no-store')
-  exportStrKeyValidations(@Body() dto: ValidateStrKeysDto) {
+  exportStrKeyValidation(@Body() dto: ValidateStrKeysDto) {
     return this.inspectorService.exportStrKeyValidationCsv(dto.inputs);
+  }
+
+  @Post('auth-entry')
+  @ApiOperation({
+    summary: 'Inspect Soroban authorization entries (credential + invocation tree)',
+  })
+  inspectAuthEntry(@Body() dto: InspectAuthEntryDto) {
+    return this.inspectorService.inspectAuthEntries(dto);
+  }
+
+  /** Alias matching issue path shape: POST /api/v1/inspector/auth-entry/inspect */
+  @Post('auth-entry/inspect')
+  @ApiOperation({ summary: 'Alias for auth-entry' })
+  inspectAuthEntryAlias(@Body() dto: InspectAuthEntryDto) {
+    return this.inspectorService.inspectAuthEntries(dto);
+  }
+
+  @Post('auth-entry/export')
+  @ApiOperation({
+    summary: 'Sanitized export of authorization entries (signature material removed)',
+  })
+  inspectAuthEntryExport(@Body() dto: InspectAuthEntryDto) {
+    return this.inspectorService.exportAuthEntries(dto);
   }
 
   @Post('replay')

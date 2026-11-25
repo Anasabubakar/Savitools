@@ -76,8 +76,8 @@ beforeEach(() => {
   mockApiFetch.mockImplementation(respondWithDefaults);
 });
 
-const ACCOUNT = StrKey.encodeEd25519PublicKey(new Uint8Array(32).fill(7));
-const CONTRACT = StrKey.encodeContract(new Uint8Array(32).fill(3));
+const ACCOUNT = StrKey.encodeEd25519PublicKey(Buffer.alloc(32, 7));
+const CONTRACT = StrKey.encodeContract(Buffer.alloc(32, 3));
 
 function makeWatch(overrides: Partial<Watch> = {}): Watch {
   return {

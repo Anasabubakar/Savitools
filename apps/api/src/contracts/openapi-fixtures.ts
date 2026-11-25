@@ -14,21 +14,6 @@ import type { OpenApiModuleFixture } from './openapi-contract';
  */
 export const OPENAPI_MODULE_FIXTURES: OpenApiModuleFixture[] = [
   {
-    module: 'soroban',
-    success: {
-      method: 'POST',
-      path: '/api/v1/soroban/estimate-expiration',
-      status: 200,
-      request: { body: { currentLedger: 1000000, liveUntilLedger: 1100000 } },
-    },
-    validationError: {
-      method: 'POST',
-      path: '/api/v1/soroban/estimate-expiration',
-      status: 400,
-      request: { body: { currentLedger: -1, liveUntilLedger: -1 } },
-    },
-  },
-  {
     module: 'auth',
     success: {
       method: 'POST',
@@ -273,6 +258,21 @@ export const OPENAPI_MODULE_FIXTURES: OpenApiModuleFixture[] = [
       path: '/api/v1/simulator/estimate',
       status: 400,
       request: { body: { sourceAsset: 'not-an-asset' } },
+    },
+  },
+  {
+    module: 'soroban',
+    success: {
+      method: 'POST',
+      path: '/api/v1/soroban/estimate-expiration',
+      status: 200,
+      request: { body: { currentLedger: 1000000, liveUntilLedger: 1100000 } },
+    },
+    validationError: {
+      method: 'POST',
+      path: '/api/v1/soroban/estimate-expiration',
+      status: 400,
+      request: { body: { currentLedger: -1, liveUntilLedger: 1000000 } },
     },
   },
   {

@@ -118,6 +118,8 @@ describe('PlaygroundService#proxyRequest SSRF protections', () => {
   });
 
   function jsonResponse(status: number, body: unknown, headers: Record<string, string> = {}) {
+    const raw = typeof body === 'string' ? body : JSON.stringify(body);
+    const encoded = new TextEncoder().encode(raw);
     return {
       status,
       headers: {
@@ -127,8 +129,22 @@ describe('PlaygroundService#proxyRequest SSRF protections', () => {
         forEach: (cb: (value: string, key: string) => void) =>
           Object.entries(headers).forEach(([k, v]) => cb(v, k)),
       },
+      body: {
+        getReader: () => {
+          let readOnce = false;
+          return {
+            read: async () => {
+              if (readOnce) return { done: true, value: undefined };
+              readOnce = true;
+              return { done: false, value: encoded };
+            },
+            cancel: jest.fn(),
+            releaseLock: jest.fn(),
+          };
+        },
+      },
       json: async () => body,
-      text: async () => JSON.stringify(body),
+      text: async () => raw,
     } as unknown as Response;
   }
 
@@ -510,7 +526,6 @@ describe('PlaygroundService#proxyRequest response-size limits', () => {
         path: '/v1/large-data',
       } as any)
       .catch((err: unknown) => err);
-
     expect(error).toBeInstanceOf(BadGatewayException);
     expect((error as Error).message).toMatch(/exceeds maximum size limit/);
   });
@@ -566,7 +581,7 @@ describe('PlaygroundService#proxyRequest response-size limits', () => {
 
   it('allows response when size is within MAX_RESPONSE_SIZE', async () => {
     const validSize = 1024; // 1KB
-    const mockData = 'a'.repeat(validSize);
+    const mockData = JSON.stringify({ data: 'a'.repeat(validSize) });
 
     const mockReader = {
       read: jest

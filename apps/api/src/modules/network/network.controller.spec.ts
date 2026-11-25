@@ -129,7 +129,7 @@ describe('NetworkController', () => {
       service.listNetworkProfiles.mockResolvedValue([profile]);
 
       await expect(controller.listProfiles({ id: 'user-1' }, {})).resolves.toEqual([profile]);
-      expect(service.listNetworkProfiles).toHaveBeenCalledWith('user-1', undefined);
+      expect(service.listNetworkProfiles).toHaveBeenCalledWith('user-1');
     });
 
     it('creates a profile for the authenticated user from the validated DTO', async () => {

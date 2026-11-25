@@ -379,7 +379,7 @@ describe('NetworkService', () => {
           horizonUrl: 'https://horizon-testnet.stellar.org',
           networkPassphrase: 'Test SDF Network ; September 2015',
         }),
-      ).rejects.toThrow(/unsupported schema version/i);
+      ).rejects.toThrow(/schema version .* is not supported/i);
       expect(create).not.toHaveBeenCalled();
     });
   });

@@ -4,9 +4,11 @@ import { ToolPageShell } from '@/components/tools/tool-page-shell';
 // Mock Next.js Link component. The function is named so `react/display-name`
 // stays satisfied — an anonymous arrow component is a lint error here.
 jest.mock('next/link', () => {
-  return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+  const MockLink = ({ children, href }: { children: React.ReactNode; href: string }) => {
     return <a href={href}>{children}</a>;
   };
+  MockLink.displayName = 'MockLink';
+  return MockLink;
 });
 
 describe('ToolPageShell', () => {

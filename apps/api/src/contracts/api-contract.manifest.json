@@ -269,6 +269,21 @@
     },
     {
       "method": "POST",
+      "path": "/api/v1/inspector/auth-entry",
+      "auth": "public"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/inspector/auth-entry/export",
+      "auth": "public"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/inspector/auth-entry/inspect",
+      "auth": "public"
+    },
+    {
+      "method": "POST",
       "path": "/api/v1/inspector/decode-xdr",
       "auth": "public"
     },

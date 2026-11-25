@@ -8,20 +8,18 @@ import { ReplayHorizonRequestDto } from './dto/replay-horizon-request.dto';
 
 // Mock axios module BEFORE any imports that use it
 jest.mock('axios', () => {
-  const mockFn: any = jest.fn();
-  mockFn.isAxiosError = jest.fn();
-  // The Stellar SDK builds its Horizon client with `axios.create()` at import
-  // time, so the mock needs that factory to exist.
-  mockFn.create = jest.fn(() => mockFn);
-  // ...and the resulting client gets response interceptors registered on it.
-  mockFn.interceptors = {
-    request: { use: jest.fn() },
-    response: { use: jest.fn() },
+  const mockInstance: any = jest.fn();
+  mockInstance.interceptors = {
+    request: { use: jest.fn(), eject: jest.fn() },
+    response: { use: jest.fn(), eject: jest.fn() },
   };
+  mockInstance.isAxiosError = jest.fn();
+  mockInstance.create = jest.fn(() => mockInstance);
   return {
     __esModule: true,
-    default: mockFn,
-    isAxiosError: mockFn.isAxiosError,
+    default: mockInstance,
+    create: mockInstance.create,
+    isAxiosError: mockInstance.isAxiosError,
   };
 });
 

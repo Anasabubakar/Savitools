@@ -2,14 +2,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { JwtService } from '@nestjs/jwt';
-import { HorizonReplay } from './entities/horizon-replay.entity';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Keypair } from '@stellar/stellar-sdk';
 import { VALIDATION_PIPE_OPTIONS } from '../../config/validation-pipe.config';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { InspectorController } from './inspector.controller';
 import { InspectorService } from './inspector.service';
 import type { TransactionBreakdown } from './inspector.service';
+import { HorizonReplay } from './entities/horizon-replay.entity';
 import { MAX_STRKEY_BATCH_SIZE } from './strkey-validation';
 
 /**
@@ -71,19 +71,24 @@ describe('InspectorController', () => {
   const hash = 'a'.repeat(64);
 
   beforeAll(async () => {
+    const mockRepo = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn(),
+      createQueryBuilder: jest.fn(),
+    };
+
     const moduleRef = await Test.createTestingModule({
       controllers: [InspectorController],
       providers: [
         InspectorService,
         { provide: ConfigService, useValue: new ConfigService() },
-        // The replay endpoints own this repository; the routes under test never
-        // reach it, but Nest still has to resolve the dependency.
-        { provide: getRepositoryToken(HorizonReplay), useValue: {} },
-        // JwtAuthGuard is applied to the replay routes; Nest resolves it for the
-        // whole controller, even when the test never hits those routes.
-        { provide: JwtService, useValue: { verify: jest.fn(), verifyAsync: jest.fn() } },
+        { provide: getRepositoryToken(HorizonReplay), useValue: mockRepo },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
     app.useGlobalPipes(new ValidationPipe(VALIDATION_PIPE_OPTIONS));

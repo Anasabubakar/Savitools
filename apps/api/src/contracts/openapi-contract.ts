@@ -84,17 +84,10 @@ const OPENAPI_METHODS: readonly OpenApiHttpMethod[] = [
 ];
 
 /** Modules that expose no feature input of their own. */
-/**
- * Routes that are infrastructure rather than product surface: they take no
- * feature input, so they are exempt from the per-module fixture catalogue.
- *
- * `ready` is the readiness probe and `csp-report` is the browser telemetry
- * collector; both behave like `health`.
- */
 export const NON_FEATURE_API_MODULES: readonly string[] = [
   'health',
-  'metrics',
   'ready',
+  'metrics',
   'csp-report',
 ];
 
